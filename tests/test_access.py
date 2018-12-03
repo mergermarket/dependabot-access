@@ -36,7 +36,7 @@ class TestArgs(unittest.TestCase):
                 '7890', ANY
             )
             mocked_open.assert_called_once_with('test-file.json', 'r')
-            patch_app.return_value.run.assert_called_once_with({
+            patch_app.return_value.configure.assert_called_once_with({
                 'test': {'teams': {}, 'apps': {}}
             })
 
@@ -84,13 +84,17 @@ class TestFormatConversion(unittest.TestCase):
 class TestDependabotConfiguration(unittest.TestCase):
 
     def test_access_granted_for_app_github(self):
-        pass
+        #  given
         access_config = {
             'test-repo': {
                 'teams': {},
                 'apps': {
-                    'dependabot': 'true'
+                    'dependabot': True
                 }
             }
         }
-        App.configure()
+
+        # when
+        App().configure(access_config)
+
+        # then

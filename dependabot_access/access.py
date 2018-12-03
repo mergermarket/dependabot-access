@@ -1,14 +1,14 @@
 import argparse
 import os
 import json
-import logging
-import requests
 
-from . dependabot import DependabotRepo
 
 class App():
 
-    def configure():
+    def __init__(self):
+        pass
+
+    def configure(self, access_config):
         pass
 
 
@@ -50,14 +50,13 @@ def configure_app(args, handle_error):
     arguments = argument_parser.parse_args(args)
 
     github_token = os.environ['GITHUB_TOKEN']
-    print(arguments)
     app = App(
         arguments.org, arguments.team, github_token,
         arguments.dependabot_id, arguments.account_id, handle_error
     )
 
     with open(arguments.access, 'r') as f:
-        app.run(
+        app.configure(
             convert_access_config(
                 json.loads(f.read()),
                 arguments.team
