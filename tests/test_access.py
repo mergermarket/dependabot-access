@@ -83,6 +83,61 @@ class TestFormatConversion(unittest.TestCase):
 
 class TestDependabotConfiguration(unittest.TestCase):
 
+    @patch('dependabot_access.access.App.handle_repo')
+    @patch('dependabot_access.access.App.get_github_team')
+    @patch('dependabot_access.access.DependabotRepo')
+    def test_app_configure(
+        self, dependabot_repo, get_github_team, handle_repo
+    ):
+        repo_name = 'mock-repo-name'
+        #  given
+        repo_config = {
+            'teams': {'team-c': 'pull'},
+            'apps': {'dependabot': True}
+        }
+
+        access_config = {
+            repo_name: repo_config
+        }
+
+        repo_mock = Mock()
+        repo_mock.name = repo_name
+        repo_mock.archived = False
+        repo_mock.permissions.admin = True
+        mock_team = Mock()
+        mock_team.get_repos.return_value = [repo_mock]
+        get_github_team.return_value = mock_team
+
+        # when
+        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app.configure(access_config)
+
+        # then
+        app.handle_repo.assert_called_once_with(repo_mock, repo_config)
+
+    @patch('dependabot_access.access.App.enforce_app_access')
+    @patch('dependabot_access.access.App.install_app_on_repo')
+    @patch('dependabot_access.access.DependabotRepo')
+    def test_app_handle_repo(
+        self, dependabot_repo, install_app_on_repo, enforce_app_access
+    ):
+        #  given
+        app_config = {
+            'dependabot': True
+        }
+        repo_config = {
+            'teams': {'team-c': 'pull'},
+            'apps': app_config
+        }
+        repo_mock = Mock()
+
+        # when
+        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app.handle_repo(repo_mock, repo_config)
+
+        # then
+        app.enforce_app_access.assert_called_once_with(repo_mock, app_config)
+
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.DependabotRepo')
     def test_enforce_app_access(
@@ -100,3 +155,24 @@ class TestDependabotConfiguration(unittest.TestCase):
 
         # then
         app.install_app_on_repo.assert_called_once_with('app-id', repo_mock)
+
+    @patch('dependabot_access.access.App.install_app_on_repo')
+    @patch('dependabot_access.access.DependabotRepo')
+    def test_dependabot_configured(
+        self, dependabot_repo, install_app_on_repo
+    ):
+        #  given
+        app_config = {
+            'dependabot': True
+        }
+        repo_mock = Mock()
+        dependabot = Mock()
+        dependabot.add_configs_to_dependabot = Mock()
+        dependabot_repo.return_value = dependabot
+
+        # when
+        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app.enforce_app_access(repo_mock, app_config)
+
+        # then
+        dependabot.add_configs_to_dependabot.assert_called()

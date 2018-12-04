@@ -53,7 +53,6 @@ class App():
             'Cache-Control': "no-cache",
         }
         response = requests.request("PUT", url, headers=headers)
-        print(response)
         if response.status_code != 204:
             self.on_error(
                 f'Failed to add repo {repo.name} to Dependabot'
@@ -63,7 +62,8 @@ class App():
     def enforce_app_access(self, repo, app_config):
         if app_config.get('dependabot'):
             self.install_app_on_repo(self.app_id, repo)
-            DependabotRepo(repo, self.on_error).add_configs_to_dependabot()
+            dependabot = DependabotRepo(repo, self.on_error)
+            dependabot.add_configs_to_dependabot()
 
 
 def validate_main_team_not_configured(teams, main_team):
