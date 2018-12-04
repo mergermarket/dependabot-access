@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import patch, mock_open, ANY
+from unittest.mock import Mock, patch, mock_open, ANY
 
 from dependabot_access.access import App, configure_app, convert_access_config
 
@@ -83,18 +83,20 @@ class TestFormatConversion(unittest.TestCase):
 
 class TestDependabotConfiguration(unittest.TestCase):
 
-    def test_access_granted_for_app_github(self):
+    @patch('dependabot_access.access.App.install_app_on_repo')
+    @patch('dependabot_access.access.DependabotRepo')
+    def test_enforce_app_access(
+        self, dependabot_repo, install_app_on_repo
+    ):
         #  given
-        access_config = {
-            'test-repo': {
-                'teams': {},
-                'apps': {
-                    'dependabot': True
-                }
-            }
+        app_config = {
+            'dependabot': True
         }
+        repo_mock = Mock()
 
         # when
-        App().configure(access_config)
+        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app.enforce_app_access(repo_mock, app_config)
 
         # then
+        app.install_app_on_repo.assert_called_once_with('app-id', repo_mock)
