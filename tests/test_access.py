@@ -81,7 +81,7 @@ class TestFormatConversion(unittest.TestCase):
         )
 
 
-class TestDependabotConfiguration(unittest.TestCase):
+class TestApp(unittest.TestCase):
 
     def setUp(self):
         self._app_id = '12345678'
@@ -264,6 +264,52 @@ class TestDependabotConfiguration(unittest.TestCase):
 
         # then
         app.install_app_on_repo.assert_called_once_with('app-id', repo_mock)
+
+    @patch('dependabot_access.access.requests')
+    def test_install_app_on_repo(self, requests):
+        github_token = 'github-token'
+        mock_repo = Mock()
+        mock_repo.id = '12345'
+        url = (
+            f'https://api.github.com/user/installations/{self._app_id}/'
+            f'repositories/{mock_repo.id}'
+        )
+        headers = {
+            'Authorization': f"token {github_token}",
+            'Accept': "application/vnd.github.machine-man-preview+json",
+            'Cache-Control': "no-cache",
+        }
+        mock_response = Mock()
+        mock_response.status_code = 204
+        app = App(ANY, ANY, github_token, self._app_id, ANY)
+        with patch(
+            'dependabot_access.access.requests.request',
+            return_value=mock_response
+        ):
+            app.install_app_on_repo(self._app_id, mock_repo)
+            requests.request.assert_called_once_with(
+                "PUT", url, headers=headers
+            )
+
+    @patch('dependabot_access.access.requests')
+    def test_install_app_on_repo_error(self, requests):
+        github_token = 'github-token'
+        mock_repo = Mock()
+        mock_repo.id = '12345'
+        mock_repo.name = 'test-mock-repo'
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_error = Mock()
+        app = App(ANY, ANY, github_token, self._app_id, mock_error)
+        with patch(
+            'dependabot_access.access.requests.request',
+            return_value=mock_response
+        ):
+            app.install_app_on_repo(self._app_id, mock_repo)
+            mock_error.assert_called_once_with(
+                'Failed to add repo test-mock-repo to Dependabot'
+                'app installation'
+            )
 
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.DependabotRepo')
