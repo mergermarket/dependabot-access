@@ -40,11 +40,18 @@ class DependabotRepo:
             'Content-Type': 'application/json',
         }
 
+        self.repo_files = self.get_repo_contents()
+
+    def get_repo_contents(self):
+        no_repo_contents_status_code = 404
         response = requests.request(
             'GET',
             f'https://api.github.com/repos/mergermarket/{self.name}/contents',
             headers=self.github_headers)
-        self.repo_files = response.json()
+        if response.status_code == no_repo_contents_status_code:
+            logger.info(f'Repo {self.name} has no content')
+            return []
+        return response.json()
 
     def has(self, filename):
         for content in self.repo_files:
@@ -111,13 +118,13 @@ class DependabotRepo:
 
             if response.status_code == 201 and response.reason == 'Created':
                 logger.info(
-                    f"Config for repo {self.name}:{package_mngr}"
+                    f"Config for repo {self.name}:{package_mngr} "
                     "added to Dependabot"
                 )
             elif (response.status_code == 400
                     and "already exists" in response.text):
                 logger.info(
-                    f"Config for repo {self.name}:{package_mngr}"
+                    f"Config for repo {self.name}:{package_mngr} "
                     "already exists in Dependabot"
                 )
             else:

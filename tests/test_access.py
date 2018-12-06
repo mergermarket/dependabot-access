@@ -45,8 +45,8 @@ class TestAccess(unittest.TestCase):
 
     def test_validate_main_team_not_configured(self):
         # given
-        teams = ['main_team']
-        main_team = 'main_team'
+        teams = ['main-team']
+        main_team = 'main-team'
 
         # when then
         with self.assertRaises(Exception):
@@ -61,7 +61,7 @@ class TestAccess(unittest.TestCase):
                 'repos': ['repo-d', 'repo-d']
             }
         ]
-        main_team = 'main_team'
+        main_team = 'main-team'
 
         # when then
         with self.assertRaises(Exception):
@@ -151,12 +151,12 @@ class TestApp(unittest.TestCase):
             repo_name: repo_config
         }
 
-        repo_mock = Mock()
-        repo_mock.name = repo_name
-        repo_mock.archived = True
-        repo_mock.permissions.admin = True
+        mock_repo = Mock()
+        mock_repo.name = repo_name
+        mock_repo.archived = True
+        mock_repo.permissions.admin = True
         mock_team = Mock()
-        mock_team.get_repos.return_value = [repo_mock]
+        mock_team.get_repos.return_value = [mock_repo]
         get_github_team.return_value = mock_team
 
         # when
@@ -183,12 +183,12 @@ class TestApp(unittest.TestCase):
             repo_name: repo_config
         }
 
-        repo_mock = Mock()
-        repo_mock.name = repo_name
-        repo_mock.archived = False
-        repo_mock.permissions.admin = False
+        mock_repo = Mock()
+        mock_repo.name = repo_name
+        mock_repo.archived = False
+        mock_repo.permissions.admin = False
         mock_team = Mock()
-        mock_team.get_repos.return_value = [repo_mock]
+        mock_team.get_repos.return_value = [mock_repo]
         get_github_team.return_value = mock_team
 
         # when
@@ -215,12 +215,12 @@ class TestApp(unittest.TestCase):
             repo_name: repo_config
         }
 
-        repo_mock = Mock()
-        repo_mock.name = repo_name
-        repo_mock.archived = False
-        repo_mock.permissions.admin = True
+        mock_repo = Mock()
+        mock_repo.name = repo_name
+        mock_repo.archived = False
+        mock_repo.permissions.admin = True
         mock_team = Mock()
-        mock_team.get_repos.return_value = [repo_mock]
+        mock_team.get_repos.return_value = [mock_repo]
         get_github_team.return_value = mock_team
 
         # when
@@ -228,7 +228,7 @@ class TestApp(unittest.TestCase):
         app.configure(access_config)
 
         # then
-        app.handle_repo.assert_called_once_with(repo_mock, repo_config)
+        app.handle_repo.assert_called_once_with(mock_repo, repo_config)
 
     @patch('dependabot_access.access.App.enforce_app_access')
     @patch('dependabot_access.access.App.install_app_on_repo')
@@ -244,14 +244,14 @@ class TestApp(unittest.TestCase):
             'teams': {'team-c': 'pull'},
             'apps': app_config
         }
-        repo_mock = Mock()
+        mock_repo = Mock()
 
         # when
         app = App(ANY, ANY, ANY, self._app_id, ANY)
-        app.handle_repo(repo_mock, repo_config)
+        app.handle_repo(mock_repo, repo_config)
 
         # then
-        app.enforce_app_access.assert_called_once_with(repo_mock, app_config)
+        app.enforce_app_access.assert_called_once_with(mock_repo, app_config)
 
     @patch('dependabot_access.access.App.enforce_app_access')
     @patch('dependabot_access.access.App.install_app_on_repo')
@@ -283,14 +283,14 @@ class TestApp(unittest.TestCase):
         app_config = {
             'dependabot': True
         }
-        repo_mock = Mock()
+        mock_repo = Mock()
 
         # when
         app = App(ANY, ANY, ANY, 'app-id', ANY)
-        app.enforce_app_access(repo_mock, app_config)
+        app.enforce_app_access(mock_repo, app_config)
 
         # then
-        app.install_app_on_repo.assert_called_once_with('app-id', repo_mock)
+        app.install_app_on_repo.assert_called_once_with('app-id', mock_repo)
 
     @patch('dependabot_access.access.requests')
     def test_install_app_on_repo(self, requests):
@@ -347,14 +347,14 @@ class TestApp(unittest.TestCase):
         app_config = {
             'dependabot': True
         }
-        repo_mock = Mock()
+        mock_repo = Mock()
         dependabot = Mock()
         dependabot.add_configs_to_dependabot = Mock()
         dependabot_repo.return_value = dependabot
 
         # when
         app = App(ANY, ANY, ANY, self._app_id, ANY)
-        app.enforce_app_access(repo_mock, app_config)
+        app.enforce_app_access(mock_repo, app_config)
 
         # then
         dependabot.add_configs_to_dependabot.assert_called()

@@ -53,7 +53,6 @@ class App():
             'Cache-Control': "no-cache",
         }
         response = requests.request("PUT", url, headers=headers)
-        print(response.status_code)
         if response.status_code != 204:
             self.on_error(
                 f'Failed to add repo {repo.name} to Dependabot'
