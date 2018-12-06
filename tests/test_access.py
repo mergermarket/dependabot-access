@@ -83,6 +83,16 @@ class TestFormatConversion(unittest.TestCase):
 
 class TestDependabotConfiguration(unittest.TestCase):
 
+    def setUp(self):
+        self._app_id = '12345678'
+
+    def test_app_get_github_team(self):
+        
+        main_team_name = 'test-team'
+
+        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        
+
     @patch('dependabot_access.access.App.handle_repo')
     @patch('dependabot_access.access.App.get_github_team')
     @patch('dependabot_access.access.DependabotRepo')
@@ -109,7 +119,7 @@ class TestDependabotConfiguration(unittest.TestCase):
         get_github_team.return_value = mock_team
 
         # when
-        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY)
         app.configure(access_config)
 
         # then
@@ -132,7 +142,7 @@ class TestDependabotConfiguration(unittest.TestCase):
         repo_mock = Mock()
 
         # when
-        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY)
         app.handle_repo(repo_mock, repo_config)
 
         # then
@@ -171,7 +181,7 @@ class TestDependabotConfiguration(unittest.TestCase):
         dependabot_repo.return_value = dependabot
 
         # when
-        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY)
         app.enforce_app_access(repo_mock, app_config)
 
         # then
