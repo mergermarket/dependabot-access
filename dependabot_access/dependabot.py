@@ -18,6 +18,7 @@ class DependabotRepo:
             "Ruby": "bundler",
             "JavaScript": "npm_and_yarn",
             "Java": "maven",
+            "Groovy": "gradle",
             "Rust": "cargo",
             "PHP": "composer",
             "Python": "pip",
@@ -73,22 +74,27 @@ class DependabotRepo:
             return self.has('requirements.txt') or \
                    self.has('setup.py') or \
                    (self.has('Pipfile') and self.has('Pipfile.lock'))
+        if lang == 'Groovy':
+            return self.has('build.gradle')
         if lang == 'Java':
-            return self.has('pom.xml') or \
-                   self.has('build.gradle')
+            return self.has('pom.xml')
         if lang == 'Rust':
             return self.has('Cargo.toml')
         if lang == 'Elixir':
             return self.has('mix.exs') and self.has('mix.lock')
         return False
 
-    def get_package_managers(self):
-        package_managers = []
-        for lang in requests.request(
+    def get_repo_languages(self):
+        response = requests.request(
             'GET',
             f"https://api.github.com/repos/mergermarket/{self.name}/languages",
             headers=self.github_headers
-        ).json():
+        )
+        return response.json()
+
+    def get_package_managers(self):
+        package_managers = []
+        for lang in self.get_repo_languages():
             if (lang in self.package_managers.keys() and
                     self.config_files_exist_for(lang)):
                 package_managers.append(self.package_managers[lang])

@@ -27,7 +27,7 @@ class TestDependabot(unittest.TestCase):
 
         mock_response = Mock()
         mock_response.status_code = 201
-        mock_response.reason = 'created'
+        mock_response.reason = 'Created'
         requests.request.return_value = mock_response
 
         # when
@@ -297,6 +297,7 @@ class TestDependabot(unittest.TestCase):
             'PHP',
             'Python',
             'Java',
+            'Groovy',
             'Rust',
             'Elixir'
         ]
@@ -323,11 +324,9 @@ class TestDependabot(unittest.TestCase):
         get_repo_contents.return_value = mock_contents
         dependabot = DependabotRepo(mock_repo, ANY)
 
-        # when
+        # when then
         for lang in languages:
-            config_exists = dependabot.config_files_exist_for(lang)
-            # then
-            assert config_exists, f'Language: {lang}'
+            assert dependabot.config_files_exist_for(lang), f'Language: {lang}'
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
     @patch('dependabot_access.dependabot.requests')
@@ -342,8 +341,10 @@ class TestDependabot(unittest.TestCase):
         mock_contents = [mock_dockerfile]
         get_repo_contents.return_value = mock_contents
         dependabot = DependabotRepo(mock_repo, ANY)
+
         # when
         package_managers = dependabot.get_package_managers()
+
         # then
         assert package_managers == set(['docker'])
 
@@ -358,11 +359,41 @@ class TestDependabot(unittest.TestCase):
             'name': 'build.gradle'
         }
         mock_contents = [mock_gradlefile]
-        mock_response = Mock()
-        requests.request.return_value = mock_response
         get_repo_contents.return_value = mock_contents
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            'Groovy': 1234
+        }
+        requests.request.return_value = mock_response
+
         dependabot = DependabotRepo(mock_repo, ANY)
+
         # when
         package_managers = dependabot.get_package_managers()
+
         # then
         assert package_managers == set(['gradle'])
+
+    @patch('dependabot_access.dependabot.requests')
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    def test_get_repo_languages(self, requests):
+        # given
+        mock_repo = Mock()
+        mock_repo.name = self._repo_name
+        mock_on_error = Mock()
+        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+
+        # when
+        dependabot_repo.get_repo_languages()
+
+        # then
+        requests.request.assert_called_with(
+            'GET',
+            'https://api.github.com/repos/mergermarket/repo-name/languages',
+            headers={
+                'Authorization': "token abcdef",
+                'Accept': 'application/vnd.github.machine-man-preview+json',
+                'Cache-Control': 'no-cache',
+            }
+        )
