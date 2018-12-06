@@ -2,10 +2,13 @@ import json
 import unittest
 from unittest.mock import Mock, patch, mock_open, ANY
 
-from dependabot_access.access import App, configure_app, convert_access_config
+from dependabot_access.access import (
+    App, configure_app, convert_access_config,
+    validate_main_team_not_configured, validate_access_config
+)
 
 
-class TestArgs(unittest.TestCase):
+class TestAccess(unittest.TestCase):
 
     @patch('dependabot_access.access.App')
     def test_args(self, patch_app):
@@ -39,6 +42,30 @@ class TestArgs(unittest.TestCase):
             patch_app.return_value.configure.assert_called_once_with({
                 'test': {'teams': {}, 'apps': {}}
             })
+
+    def test_validate_main_team_not_configured(self):
+        # given
+        teams = ['main_team']
+        main_team = 'main_team'
+
+        # when then
+        with self.assertRaises(Exception):
+            validate_main_team_not_configured(teams, main_team)
+
+    def test_validate_access_config_no_duplicate(self):
+        # given
+        access_config = [
+            {
+                'teams': {'team-c': 'pull'},
+                'apps': {'dependabot': True},
+                'repos': ['repo-d', 'repo-d']
+            }
+        ]
+        main_team = 'main_team'
+
+        # when then
+        with self.assertRaises(Exception):
+            validate_access_config(access_config, main_team)
 
 
 class TestFormatConversion(unittest.TestCase):
