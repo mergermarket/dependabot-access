@@ -292,6 +292,24 @@ class TestApp(unittest.TestCase):
         # then
         app.install_app_on_repo.assert_called_once_with('app-id', mock_repo)
 
+    @patch('dependabot_access.access.App.install_app_on_repo')
+    @patch('dependabot_access.access.DependabotRepo')
+    def test_enforce_app_access_no_dependabot(
+        self, dependabot_repo, install_app_on_repo
+    ):
+        #  given
+        app_config = {
+            'dependabot': False
+        }
+        mock_repo = Mock()
+
+        # when
+        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app.enforce_app_access(mock_repo, app_config)
+
+        # then
+        app.install_app_on_repo.assert_not_called()
+
     @patch('dependabot_access.access.requests')
     def test_install_app_on_repo(self, requests):
         github_token = 'github-token'
