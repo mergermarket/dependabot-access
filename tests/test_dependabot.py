@@ -263,13 +263,6 @@ class TestDependabot(unittest.TestCase):
         mock_contents = [mock_gradlefile]
         get_repo_contents.return_value = mock_contents
 
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            'Java': 22,
-            'Groovy': 1234
-        }
-        requests.request.return_value = mock_response
-
         dependabot = DependabotRepo(mock_repo, ANY, ANY)
 
         # when
@@ -290,39 +283,6 @@ class TestDependabot(unittest.TestCase):
         }
         mock_contents = [mock_gradlefile]
         get_repo_contents.return_value = mock_contents
-
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            'Groovy': 1234,
-            'Java': 22
-        }
-        requests.request.return_value = mock_response
-
-        dependabot = DependabotRepo(mock_repo, ANY, ANY)
-
-        # when
-        package_managers = dependabot.get_package_managers()
-
-        # then
-        assert package_managers == set(['maven'])
-
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_get_no_lang_package_manager(self, get_repo_contents, requests):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_gradlefile = {
-            'name': 'pom.xml'
-        }
-        mock_contents = [mock_gradlefile]
-        get_repo_contents.return_value = mock_contents
-
-        mock_response = Mock()
-        mock_response.json.return_value = {
-        }
-        requests.request.return_value = mock_response
 
         dependabot = DependabotRepo(mock_repo, ANY, ANY)
 
