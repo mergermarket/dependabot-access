@@ -14,8 +14,13 @@ def handle_error(err):
     failed = True
 
 
-access.configure_app(sys.argv[1:], handle_error)
+def main(name):
+    if name == '__main__':
+        access.configure_app(sys.argv[1:], handle_error)
 
-if failed:
-    print('error(s) were encountered - see above', file=sys.stderr)
-    sys.exit(1)
+        if failed:
+            print('error(s) were encountered - see above', file=sys.stderr)
+            sys.exit(1)
+
+
+main(__name__)
