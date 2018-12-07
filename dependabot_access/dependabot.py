@@ -9,24 +9,27 @@ logger.setLevel(logging.INFO)
 
 
 class DependabotRepo:
-    def __init__(self, github_repo, on_error):
+    def __init__(self, github_repo, account_id, on_error):
         self.name = github_repo.name
-        self.id = github_repo.id
+        self.repo_id = github_repo.id
+        self.account_id = account_id
         self.on_error = on_error
 
-        self.package_managers = {
-            "Ruby": "bundler",
-            "JavaScript": "npm_and_yarn",
-            "Java": "maven",
-            "Groovy": "gradle",
-            "Rust": "cargo",
-            "PHP": "composer",
-            "Python": "pip",
-            "Elixir": "hex",
-            "F#": "nuget",
-            "V#": "nuget",
-            "Visual Basic": "nuget",
-            "Docker": "docker"
+        self.package_managers_files = {
+            "Dockerfile": "docker",
+            "Gemfile": "bundler",
+            "gemspec": "bundler",
+            "package.json": "npm_and_yarn",
+            "composer.json": "composer",
+            "requirements.txt": "pip",
+            "setup.py": "pip",
+            "Pipfile": "pip",
+            "Pipfile.lock": "pip",
+            "build.gradle": "gradle",
+            "pom.xml": "maven",
+            "Cargo.toml": "cargo",
+            "mix.exs": "hex",
+            "mix.lock": "hex"
         }
 
         self.github_headers = {
@@ -55,65 +58,26 @@ class DependabotRepo:
         return response.json()
 
     def has(self, filename):
-        for content in self.repo_files:
-            if content.get('name') == filename:
-                return True
-        return False
-
-    def config_files_exist_for(self, lang):  # noqa: C901
-        if lang == 'Docker':
-            return self.has('Dockerfile')
-        if lang == 'Ruby':
-            return self.has('Gemfile') or \
-                   self.has('gemspec')
-        if lang == 'JavaScript':
-            return self.has('package.json')
-        if lang == 'PHP':
-            return self.has('composer.json')
-        if lang == 'Python':
-            return self.has('requirements.txt') or \
-                   self.has('setup.py') or \
-                   (self.has('Pipfile') and self.has('Pipfile.lock'))
-        if lang == 'Groovy':
-            return self.has('build.gradle')
-        if lang == 'Java':
-            return self.has('pom.xml')
-        if lang == 'Rust':
-            return self.has('Cargo.toml')
-        if lang == 'Elixir':
-            return self.has('mix.exs') and self.has('mix.lock')
-        return False
-
-    def get_repo_languages(self):
-        response = requests.request(
-            'GET',
-            f"https://api.github.com/repos/mergermarket/{self.name}/languages",
-            headers=self.github_headers
-        )
-        return response.json()
+        file_list = [repo_file.get('name') for repo_file in self.repo_files]
+        return filename in file_list
 
     def get_package_managers(self):
         package_managers = []
-        for lang in self.get_repo_languages():
-            if (lang in self.package_managers.keys() and
-                    self.config_files_exist_for(lang)):
-                package_managers.append(self.package_managers[lang])
-
-        # Docker not returned as a language
-        # from Github but is a valid language in Dependabot
-        if self.config_files_exist_for('Docker'):
-            package_managers.append(self.package_managers['Docker'])
-
+        for (
+            package_manager_file, package_manager
+        ) in self.package_managers_files.items():
+            if self.has(package_manager_file):
+                package_managers.append(package_manager)
         return set(package_managers)
 
     def add_configs_to_dependabot(self):
-        for package_mngr in self.get_package_managers():
+        for package_manager in self.get_package_managers():
             data = {
-                'repo-id': self.id,
-                'package-manager': package_mngr,
+                'repo-id': self.repo_id,
+                'package-manager': package_manager,
                 'update-schedule': 'daily',
                 'directory': '/',
-                'account-id': '2012700',
+                'account-id': self.account_id,
                 'account-type': 'org',
             }
             response = requests.request(
@@ -124,18 +88,19 @@ class DependabotRepo:
 
             if response.status_code == 201 and response.reason == 'Created':
                 logger.info(
-                    f"Config for repo {self.name}:{package_mngr} "
-                    "added to Dependabot"
+                    f"Config for repo {self.name}. "
+                    f"Dependabot Package manager: {package_manager} added"
                 )
             elif (response.status_code == 400
                     and "already exists" in response.text):
                 logger.info(
-                    f"Config for repo {self.name}:{package_mngr} "
-                    "already exists in Dependabot"
+                    f"Config for repo {self.name}. "
+                    f"Dependabot Package Manager: {package_manager} "
+                    "already exists"
                 )
             else:
                 self.on_error(
-                    f"Failed to add repo {self.name}:{package_mngr} to "
-                    "Dependabot app installation "
-                    f"(Staus Code: {response.status_code}:{response.text})"
+                    f"Failed to add repo {self.name}. "
+                    f"Dependabot Package Manager: {package_manager} failed. "
+                    f"(Status Code: {response.status_code}: {response.text})"
                 )

@@ -21,9 +21,9 @@ class TestDependabot(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_repo.id = '1234'
-        dependabot_repo = DependabotRepo(mock_repo, Mock())
+        dependabot_repo = DependabotRepo(mock_repo, '4444', Mock())
 
-        get_package_managers.return_value = set({'Python': 'pip'})
+        get_package_managers.return_value = set(['pip'])
 
         mock_response = Mock()
         mock_response.status_code = 201
@@ -40,10 +40,10 @@ class TestDependabot(unittest.TestCase):
             data=json.dumps(
                 {
                     'repo-id': '1234',
-                    'package-manager': 'Python',
+                    'package-manager': 'pip',
                     'update-schedule': 'daily',
                     'directory': '/',
-                    'account-id': '2012700',
+                    'account-id': '4444',
                     'account-type': 'org',
                 }
             ),
@@ -55,7 +55,7 @@ class TestDependabot(unittest.TestCase):
         )
 
         logger.info.assert_called_once_with(
-            "Config for repo repo-name:Python added to Dependabot"
+            "Config for repo repo-name. Dependabot Package manager: pip added"
         )
 
     @patch('dependabot_access.dependabot.logger')
@@ -69,9 +69,9 @@ class TestDependabot(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_repo.id = '1234'
-        dependabot_repo = DependabotRepo(mock_repo, Mock())
+        dependabot_repo = DependabotRepo(mock_repo, '4444', Mock())
 
-        get_package_managers.return_value = set({'Python': 'pip'})
+        get_package_managers.return_value = set(['pip'])
 
         mock_response = Mock()
         mock_response.status_code = 400
@@ -88,10 +88,10 @@ class TestDependabot(unittest.TestCase):
             data=json.dumps(
                 {
                     'repo-id': '1234',
-                    'package-manager': 'Python',
+                    'package-manager': 'pip',
                     'update-schedule': 'daily',
                     'directory': '/',
-                    'account-id': '2012700',
+                    'account-id': '4444',
                     'account-type': 'org',
                 }
             ),
@@ -103,7 +103,8 @@ class TestDependabot(unittest.TestCase):
         )
 
         logger.info.assert_called_once_with(
-            "Config for repo repo-name:Python already exists in Dependabot"
+            "Config for repo repo-name. "
+            "Dependabot Package Manager: pip already exists"
         )
 
     @patch('dependabot_access.dependabot.requests')
@@ -117,9 +118,9 @@ class TestDependabot(unittest.TestCase):
         mock_repo.name = self._repo_name
         mock_repo.id = '1234'
         mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+        dependabot_repo = DependabotRepo(mock_repo, '4444', mock_on_error)
 
-        get_package_managers.return_value = set({'Python': 'pip'})
+        get_package_managers.return_value = set(['pip'])
 
         mock_response = Mock()
         mock_response.status_code = 500
@@ -136,10 +137,10 @@ class TestDependabot(unittest.TestCase):
             data=json.dumps(
                 {
                     'repo-id': '1234',
-                    'package-manager': 'Python',
+                    'package-manager': 'pip',
                     'update-schedule': 'daily',
                     'directory': '/',
-                    'account-id': '2012700',
+                    'account-id': '4444',
                     'account-type': 'org',
                 }
             ),
@@ -151,9 +152,9 @@ class TestDependabot(unittest.TestCase):
         )
 
         mock_on_error.assert_called_once_with(
-            "Failed to add repo repo-name:Python to "
-            "Dependabot app installation "
-            "(Staus Code: 500:There's been an error!)"
+            "Failed to add repo repo-name. "
+            "Dependabot Package Manager: pip failed. "
+            "(Status Code: 500: There's been an error!)"
         )
 
     @patch('dependabot_access.dependabot.requests')
@@ -163,7 +164,7 @@ class TestDependabot(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
 
         # when
         dependabot_repo.get_repo_contents()
@@ -186,7 +187,7 @@ class TestDependabot(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
 
         mock_response = Mock()
         mock_response.status_code = 404
@@ -205,7 +206,7 @@ class TestDependabot(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
 
         get_repo_contents.return_value = []
 
@@ -224,109 +225,10 @@ class TestDependabot(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
 
         # when then
         assert dependabot_repo.has('Dockerfile')
-
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_config_files_for_docker(self, get_repo_contents):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_pipfile = {
-            'name': 'Pipfile'
-        }
-        mock_dockerfile = {
-            'name': 'Dockerfile'
-        }
-        mock_contents = [mock_pipfile, mock_dockerfile]
-        get_repo_contents.return_value = mock_contents
-        dependabot = DependabotRepo(mock_repo, ANY)
-
-        # when
-        config_exists = dependabot.config_files_exist_for('Docker')
-
-        # then
-        assert config_exists
-
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_no_config_files_for_docker(self, get_repo_contents):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_content = {
-            'name': 'Pipfile'
-        }
-        get_repo_contents.return_value = [mock_content]
-        dependabot = DependabotRepo(mock_repo, ANY)
-
-        # when
-        config_exists = dependabot.config_files_exist_for('Docker')
-
-        # then
-        assert not config_exists
-
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_no_config_files_for_unknown_lang(self, get_repo_contents):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        get_repo_contents.return_value = [ANY]
-        dependabot = DependabotRepo(mock_repo, ANY)
-
-        # when
-        config_exists = dependabot.config_files_exist_for('fake-language')
-
-        # then
-        assert not config_exists
-
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_config_files_for_languages(self, get_repo_contents):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        languages = [
-            'Docker',
-            'Ruby',
-            'JavaScript',
-            'PHP',
-            'Python',
-            'Java',
-            'Groovy',
-            'Rust',
-            'Elixir'
-        ]
-        filenames = [
-            'Dockerfile',
-            'Gemfile',
-            'gemspec',
-            'package.json',
-            'composer.json',
-            'requirements.txt',
-            'setup.py',
-            'Pipfile',
-            'Pipfile.lock',
-            'pom.xml',
-            'build.gradle',
-            'Cargo.toml',
-            'mix.exs',
-            'mix.lock'
-        ]
-        mock_contents = [
-            {'name': filename}
-            for filename in filenames
-        ]
-        get_repo_contents.return_value = mock_contents
-        dependabot = DependabotRepo(mock_repo, ANY)
-
-        # when then
-        for lang in languages:
-            assert dependabot.config_files_exist_for(lang), f'Language: {lang}'
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
     @patch('dependabot_access.dependabot.requests')
@@ -340,7 +242,7 @@ class TestDependabot(unittest.TestCase):
         }
         mock_contents = [mock_dockerfile]
         get_repo_contents.return_value = mock_contents
-        dependabot = DependabotRepo(mock_repo, ANY)
+        dependabot = DependabotRepo(mock_repo, ANY, ANY)
 
         # when
         package_managers = dependabot.get_package_managers()
@@ -363,11 +265,12 @@ class TestDependabot(unittest.TestCase):
 
         mock_response = Mock()
         mock_response.json.return_value = {
+            'Java': 22,
             'Groovy': 1234
         }
         requests.request.return_value = mock_response
 
-        dependabot = DependabotRepo(mock_repo, ANY)
+        dependabot = DependabotRepo(mock_repo, ANY, ANY)
 
         # when
         package_managers = dependabot.get_package_managers()
@@ -375,25 +278,102 @@ class TestDependabot(unittest.TestCase):
         # then
         assert package_managers == set(['gradle'])
 
-    @patch('dependabot_access.dependabot.requests')
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    def test_get_repo_languages(self, requests):
+    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
+    def test_get_maven_package_manager(self, get_repo_contents, requests):
         # given
         mock_repo = Mock()
         mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, mock_on_error)
+        mock_gradlefile = {
+            'name': 'pom.xml'
+        }
+        mock_contents = [mock_gradlefile]
+        get_repo_contents.return_value = mock_contents
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            'Groovy': 1234,
+            'Java': 22
+        }
+        requests.request.return_value = mock_response
+
+        dependabot = DependabotRepo(mock_repo, ANY, ANY)
 
         # when
-        dependabot_repo.get_repo_languages()
+        package_managers = dependabot.get_package_managers()
 
         # then
-        requests.request.assert_called_with(
-            'GET',
-            'https://api.github.com/repos/mergermarket/repo-name/languages',
-            headers={
-                'Authorization': "token abcdef",
-                'Accept': 'application/vnd.github.machine-man-preview+json',
-                'Cache-Control': 'no-cache',
-            }
-        )
+        assert package_managers == set(['maven'])
+
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
+    def test_get_no_lang_package_manager(self, get_repo_contents, requests):
+        # given
+        mock_repo = Mock()
+        mock_repo.name = self._repo_name
+        mock_gradlefile = {
+            'name': 'pom.xml'
+        }
+        mock_contents = [mock_gradlefile]
+        get_repo_contents.return_value = mock_contents
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+        }
+        requests.request.return_value = mock_response
+
+        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+
+        # when
+        package_managers = dependabot.get_package_managers()
+
+        # then
+        assert package_managers == set(['maven'])
+
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
+    def test_get_no_files_in_repo(self, get_repo_contents, requests):
+        # given
+        mock_repo = Mock()
+        mock_repo.name = self._repo_name
+        mock_contents = []
+        get_repo_contents.return_value = mock_contents
+
+        mock_response = Mock()
+        mock_response.json.return_value = {
+        }
+        requests.request.return_value = mock_response
+
+        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+
+        # when
+        package_managers = dependabot.get_package_managers()
+
+        # then
+        assert package_managers == set([])
+
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
+    def test_get_multiple_package_managers(self, get_repo_contents, requests):
+        # given
+        mock_repo = Mock()
+        mock_repo.name = self._repo_name
+        mock_dockerfile = {
+            'name': 'Dockerfile'
+        }
+        mock_pipfile = {
+            'name': 'Pipfile'
+        }
+        mock_contents = [mock_dockerfile, mock_pipfile]
+        get_repo_contents.return_value = mock_contents
+        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+
+        # when
+        package_managers = dependabot.get_package_managers()
+
+        # then
+        assert package_managers == set(['docker', 'pip'])
