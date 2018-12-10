@@ -1,0 +1,35 @@
+[
+  {
+    "teams": {
+      "Team-1": "pull"
+    },
+    "apps": {
+      "dependabot": true
+    },
+    "repos": [
+      "Repo-A",
+      "Repo-B",
+      "Repo-C"
+    ]
+  },
+  {
+    "teams": {
+      "Team-0": "pull",
+      "Team-2": "push"
+    },
+    "repos": [
+      "Repo-X"
+    ]
+  },
+  {
+    "description": "Some Repo Description",
+    "teams": {
+      "Team-0": "pull",
+      "Team-3": "push"
+    },
+    "repos": [
+      "Repo-Y",
+      "Repo-Z"
+    ]
+  }
+]

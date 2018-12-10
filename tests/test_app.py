@@ -23,7 +23,7 @@ class TestApp(unittest.TestCase):
         github.return_value.get_organization.return_value = mock_org
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, ANY)
         team = app.get_github_team(main_team_name)
 
         # then
@@ -56,7 +56,7 @@ class TestApp(unittest.TestCase):
         get_github_team.return_value = mock_team
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, ANY)
         app.configure(access_config)
 
         # then
@@ -88,7 +88,7 @@ class TestApp(unittest.TestCase):
         get_github_team.return_value = mock_team
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, ANY)
         app.configure(access_config)
 
         # then
@@ -120,7 +120,7 @@ class TestApp(unittest.TestCase):
         get_github_team.return_value = mock_team
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, ANY)
         app.configure(access_config)
 
         # then
@@ -143,7 +143,7 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, ANY)
         app.handle_repo(mock_repo, repo_config)
 
         # then
@@ -161,7 +161,7 @@ class TestApp(unittest.TestCase):
         mock_repo.name = 'mock-repo'
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, mock_error)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, mock_error)
         app.handle_repo(mock_repo, None)
 
         # then
@@ -182,7 +182,7 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
 
         # when
-        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app = App(ANY, ANY, ANY, 'app-id', ANY, ANY)
         app.enforce_app_access(mock_repo, app_config)
 
         # then
@@ -200,7 +200,7 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
 
         # when
-        app = App(ANY, ANY, ANY, 'app-id', ANY)
+        app = App(ANY, ANY, ANY, 'app-id', ANY, ANY)
         app.enforce_app_access(mock_repo, app_config)
 
         # then
@@ -222,7 +222,7 @@ class TestApp(unittest.TestCase):
         }
         mock_response = Mock()
         mock_response.status_code = 204
-        app = App(ANY, ANY, github_token, self._app_id, ANY)
+        app = App(ANY, ANY, github_token, self._app_id, ANY, ANY)
         with patch(
             'dependabot_access.access.requests.request',
             return_value=mock_response
@@ -241,7 +241,7 @@ class TestApp(unittest.TestCase):
         mock_response = Mock()
         mock_response.status_code = 500
         mock_error = Mock()
-        app = App(ANY, ANY, github_token, self._app_id, mock_error)
+        app = App(ANY, ANY, github_token, self._app_id, ANY, mock_error)
         with patch(
             'dependabot_access.access.requests.request',
             return_value=mock_response
@@ -267,7 +267,7 @@ class TestApp(unittest.TestCase):
         dependabot_repo.return_value = dependabot
 
         # when
-        app = App(ANY, ANY, ANY, self._app_id, ANY)
+        app = App(ANY, ANY, ANY, self._app_id, ANY, ANY)
         app.enforce_app_access(mock_repo, app_config)
 
         # then

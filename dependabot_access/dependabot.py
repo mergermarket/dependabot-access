@@ -10,7 +10,7 @@ logger.setLevel(logging.INFO)
 
 class DependabotRepo:
     def __init__(self, github_repo, account_id, on_error):
-        self.name = github_repo.name
+        self.repo_name = github_repo.name
         self.repo_id = github_repo.id
         self.account_id = account_id
         self.on_error = on_error
@@ -50,10 +50,11 @@ class DependabotRepo:
         no_repo_contents_status_code = 404
         response = requests.request(
             'GET',
-            f'https://api.github.com/repos/mergermarket/{self.name}/contents',
+            f'https://api.github.com/repos/mergermarket/'
+            f'{self.repo_name}/contents',
             headers=self.github_headers)
         if response.status_code == no_repo_contents_status_code:
-            logger.info(f'Repo {self.name} has no content')
+            logger.info(f'Repo {self.repo_name} has no content')
             return []
         return response.json()
 
@@ -84,23 +85,23 @@ class DependabotRepo:
                 'POST',
                 'https://api.dependabot.com/update_configs',
                 data=json.dumps(data),
-                headers=self.dependabot_headers)
-
+                headers=self.dependabot_headers
+            )
             if response.status_code == 201 and response.reason == 'Created':
                 logger.info(
-                    f"Config for repo {self.name}. "
+                    f"Config for repo {self.repo_name}. "
                     f"Dependabot Package manager: {package_manager} added"
                 )
             elif (response.status_code == 400
                     and "already exists" in response.text):
                 logger.info(
-                    f"Config for repo {self.name}. "
+                    f"Config for repo {self.repo_name}. "
                     f"Dependabot Package Manager: {package_manager} "
                     "already exists"
                 )
             else:
                 self.on_error(
-                    f"Failed to add repo {self.name}. "
+                    f"Failed to add repo {self.repo_name}. "
                     f"Dependabot Package Manager: {package_manager} failed. "
                     f"(Status Code: {response.status_code}: {response.text})"
                 )

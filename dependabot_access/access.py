@@ -10,12 +10,14 @@ from . dependabot import DependabotRepo
 class App():
 
     def __init__(
-        self, org_name, main_team_name, github_token, app_id, on_error
+        self, org_name, main_team_name, github_token,
+        app_id, account_id, on_error
     ):
         self.org_name = org_name
         self.main_team_name = main_team_name
         self.github_token = github_token
         self.app_id = app_id
+        self.account_id = account_id
         self.on_error = on_error
 
     def get_github_team(self, main_team_name):
@@ -62,7 +64,7 @@ class App():
     def enforce_app_access(self, repo, app_config):
         if app_config.get('dependabot'):
             self.install_app_on_repo(self.app_id, repo)
-            dependabot = DependabotRepo(repo, self.on_error)
+            dependabot = DependabotRepo(repo, self.account_id, self.on_error)
             dependabot.add_configs_to_dependabot()
 
 
