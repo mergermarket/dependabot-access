@@ -55,7 +55,7 @@ class App():
 
 
 def configure_app(args, handle_error):
-    argument_parser = argparse.ArgumentParser('github_access')
+    argument_parser = argparse.ArgumentParser('dependabot_access')
     argument_parser.add_argument('--org', required=True)
     argument_parser.add_argument('--access', required=True)
     argument_parser.add_argument('--dependabot-id', required=True)

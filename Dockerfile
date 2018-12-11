@@ -12,7 +12,6 @@ ADD . .
 RUN py.test --cov=dependabot_access --cov-report=term-missing --cov-branch -n=auto
 RUN flake8 --max-complexity=4
 
-
 FROM base
 ADD . .
 ENTRYPOINT [ "python", "-m", "dependabot_access" ]

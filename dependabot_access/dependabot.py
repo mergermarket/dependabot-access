@@ -5,7 +5,6 @@ import requests
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 
 class DependabotRepo:
