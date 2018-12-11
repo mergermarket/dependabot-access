@@ -92,8 +92,10 @@ class DependabotRepo:
                     f"Config for repo {self.repo_name}. "
                     f"Dependabot Package manager: {package_manager} added"
                 )
-            elif (response.status_code == 400
-                    and "already exists" in response.text):
+            elif (
+                response.status_code == 400 and
+                "already exists" in response.text
+            ):
                 logger.info(
                     f"Config for repo {self.repo_name}. "
                     f"Dependabot Package Manager: {package_manager} "

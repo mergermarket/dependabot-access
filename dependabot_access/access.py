@@ -21,14 +21,13 @@ class App():
     def configure(self, config_list):
         for config in config_list:
             if config.get('apps', {}).get('dependabot', False):
-                for repo in config.get('repos', []):
-                    self.enforce_app_access(repo)
+                for repo_name in config.get('repos', []):
+                    self.enforce_app_access(repo_name)
 
     def enforce_app_access(self, repo_name):
         repo = self.get_github_repo(repo_name)
         if repo.archived or not repo.permissions.admin:
             return
-
         self.install_app_on_repo(self.app_id, repo)
         dependabot = DependabotRepo(repo, self.account_id, self.on_error)
         dependabot.add_configs_to_dependabot()

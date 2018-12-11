@@ -150,6 +150,76 @@ class TestApp(unittest.TestCase):
         # then
         app.install_app_on_repo.assert_not_called()
 
+    @patch('dependabot_access.access.App.enforce_app_access')
+    def test_app_configure_no_dependabot_object(
+        self, enforce_app_access
+    ):
+        #  given
+        config = [
+            {
+                'teams': {
+                    'team-c': 'pull'
+                },
+                'apps': {},
+                'repos': [
+                    'mock_repo_name'
+                ]
+            }
+        ]
+
+        # when
+        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app.configure(config)
+
+        # then
+        app.enforce_app_access.assert_not_called()
+
+    @patch('dependabot_access.access.App.enforce_app_access')
+    def test_app_configure_no_app(
+        self, enforce_app_access
+    ):
+        #  given
+        config = [
+            {
+                'teams': {
+                    'team-c': 'pull'
+                },
+                'repos': [
+                    'mock_repo_name'
+                ]
+            }
+        ]
+
+        # when
+        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app.configure(config)
+
+        # then
+        app.enforce_app_access.assert_not_called()
+
+    @patch('dependabot_access.access.App.enforce_app_access')
+    def test_app_configure_no_repos(
+        self, enforce_app_access
+    ):
+        #  given
+        config = [
+            {
+                'teams': {
+                    'team-c': 'pull'
+                },
+                'apps': {
+                    'dependabot': True
+                }
+            }
+        ]
+
+        # when
+        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app.configure(config)
+
+        # then
+        app.enforce_app_access.assert_not_called()
+
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.App.get_github_repo')
     @patch('dependabot_access.access.DependabotRepo')
