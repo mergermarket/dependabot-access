@@ -80,6 +80,7 @@ class DependabotRepo:
                 'account-id': self.account_id,
                 'account-type': 'org',
             }
+            logger.info(f'Dependabot: Updating config for {self.repo_name}')
             response = requests.request(
                 'POST',
                 'https://api.dependabot.com/update_configs',

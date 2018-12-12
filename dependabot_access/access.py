@@ -1,10 +1,13 @@
 import argparse
 import json
+import logging
 import os
 import requests
 
 from github import Github
 from . dependabot import DependabotRepo
+
+logger = logging.getLogger()
 
 
 class App():
@@ -34,6 +37,7 @@ class App():
 
     def get_github_repo(self, repo_name):
         github = Github(self.github_token)
+        logger.info(f'Getting repo: {repo_name}')
         return github.get_repo(f'{self.org_name}/{repo_name}')
 
     def install_app_on_repo(self, app_id, repo):
@@ -46,6 +50,7 @@ class App():
             'Accept': "application/vnd.github.machine-man-preview+json",
             'Cache-Control': "no-cache",
         }
+        logger.info(f'Installing app on {repo.name} in Github')
         response = requests.request("PUT", url, headers=headers)
         if response.status_code != 204:
             self.on_error(
