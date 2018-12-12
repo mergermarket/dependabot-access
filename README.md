@@ -1,6 +1,7 @@
 # dependabot-access
 
 [![Build Status](https://travis-ci.org/mergermarket/dependabot-access.svg?branch=master)](https://travis-ci.org/mergermarket/dependabot-access)
+[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=mergermarket/dependabot-access)](https://dependabot.com)
 
 This container can be used to configure [Dependabot](https://dependabot.com/) for repositories.
 
