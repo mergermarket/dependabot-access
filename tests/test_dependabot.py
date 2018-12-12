@@ -54,7 +54,7 @@ class TestDependabot(unittest.TestCase):
             }
         )
 
-        logger.info.assert_called_once_with(
+        logger.info.assert_called_with(
             "Config for repo repo-name. Dependabot Package manager: pip added"
         )
 
@@ -102,7 +102,7 @@ class TestDependabot(unittest.TestCase):
             }
         )
 
-        logger.info.assert_called_once_with(
+        logger.info.assert_called_with(
             "Config for repo repo-name. "
             "Dependabot Package Manager: pip already exists"
         )
