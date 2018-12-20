@@ -13,7 +13,7 @@ class TestAccess(unittest.TestCase):
         self.dependabot_id = '123456'
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
+    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.Github')
     def test_access(self, github, install_app_on_repo, get_repo_contents):

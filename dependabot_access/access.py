@@ -5,7 +5,7 @@ import os
 import requests
 
 from collections import namedtuple
-from . dependabot import DependabotRepo
+from . dependabot import Dependabot
 
 logger = logging.getLogger()
 
@@ -13,7 +13,7 @@ logger = logging.getLogger()
 class App():
 
     def __init__(
-        self, org_name, github_token, app_id, account_id, on_error
+        self, org_name, github_token, app_id, account_id, on_error, dependabot
     ):
         self.org_name = org_name
         self.github_token = github_token
@@ -24,13 +24,13 @@ class App():
         self.github_headers = {
             'Authorization': f"token {self.github_token}",
             'Accept': "application/vnd.github.machine-man-preview+json",
-            'Cache-Control': "no-cache",
+            'Cache-Control': "no-cache"
         }
 
         self.github_request_session = requests.Session()
         self.github_request_session.headers.update(self.github_headers)
 
-        self.dependabot_repo = DependabotRepo(self.account_id, self.on_error)
+        self.dependabot = dependabot
 
     def configure(self, config_list):
         for config in config_list:
@@ -57,7 +57,7 @@ class App():
         self.install_app_on_repo(self.app_id, repo)
         repo_files = self.get_repo_contents(repo_name)
 
-        self.dependabot_repo.add_configs_to_dependabot(repo, repo_files)
+        self.dependabot.add_configs_to_dependabot(repo, repo_files)
 
     def get_github_repo(self, repo_name):
         logger.info(f'Getting repo: {repo_name}')
@@ -99,9 +99,10 @@ def configure_app(args, handle_error):
     arguments = argument_parser.parse_args(args)
 
     github_token = os.environ['GITHUB_TOKEN']
+    dependabot = Dependabot(arguments.account_id, handle_error)
     app = App(
         arguments.org, github_token, arguments.dependabot_id,
-        arguments.account_id, handle_error
+        arguments.account_id, handle_error, dependabot
     )
 
     with open(arguments.access, 'r') as f:

@@ -7,7 +7,7 @@ import requests
 logger = logging.getLogger()
 
 
-class DependabotRepo:
+class Dependabot:
     def __init__(self, account_id, on_error):
         self.account_id = account_id
         self.on_error = on_error

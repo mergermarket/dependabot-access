@@ -9,8 +9,8 @@ FROM base as test
 ADD test_requirements.txt /tmp/
 RUN pip install -r /tmp/test_requirements.txt
 ADD . .
-# RUN py.test --cov=dependabot_access --cov-report=term-missing --cov-branch -n=auto
-# RUN flake8 --max-complexity=4
+RUN py.test --cov=dependabot_access --cov-report=term-missing --cov-branch -n=auto
+RUN flake8 --max-complexity=4
 
 FROM base
 ADD . .
