@@ -200,140 +200,97 @@ class TestDependabot(unittest.TestCase):
         assert result == []
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_has_false(self, get_repo_contents):
+    def test_has_false(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = Dependabot(mock_repo, ANY, mock_on_error)
-
-        get_repo_contents.return_value = []
+        dependabot_repo = Dependabot(ANY, Mock())
 
         # when then
-        self.assertFalse(dependabot_repo.has(None))
+        self.assertFalse(dependabot_repo.has(None, []))
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_has_true(self, get_repo_contents):
+    def test_has_true(self):
         # given
         mock_content = {
             'name': 'Dockerfile'
         }
-        get_repo_contents.return_value = [mock_content]
 
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = Dependabot(mock_repo, ANY, mock_on_error)
+        dependabot_repo = Dependabot(ANY, Mock())
 
         # when then
-        assert dependabot_repo.has('Dockerfile')
+        assert dependabot_repo.has('Dockerfile', [mock_content])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_get_package_managers(self, get_repo_contents, requests):
+    def test_get_package_managers(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_dockerfile = {
+        mock_content = {
             'name': 'Dockerfile'
         }
-        mock_contents = [mock_dockerfile]
-        get_repo_contents.return_value = mock_contents
-        dependabot = Dependabot(mock_repo, ANY, ANY)
+
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([mock_content])
 
         # then
         assert package_managers == set(['docker'])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_get_gradle_package_manager(self, get_repo_contents, requests):
+    def test_get_gradle_package_manager(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_gradlefile = {
+        mock_content = {
             'name': 'build.gradle'
         }
-        mock_contents = [mock_gradlefile]
-        get_repo_contents.return_value = mock_contents
 
-        dependabot = Dependabot(mock_repo, ANY, ANY)
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([mock_content])
 
         # then
         assert package_managers == set(['gradle'])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_get_maven_package_manager(self, get_repo_contents, requests):
+    def test_get_maven_package_manager(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_gradlefile = {
+        mock_content = {
             'name': 'pom.xml'
         }
-        mock_contents = [mock_gradlefile]
-        get_repo_contents.return_value = mock_contents
 
-        dependabot = Dependabot(mock_repo, ANY, ANY)
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([mock_content])
 
         # then
         assert package_managers == set(['maven'])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_get_no_files_in_repo(self, get_repo_contents, requests):
+    def test_get_no_files_in_repo(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_contents = []
-        get_repo_contents.return_value = mock_contents
-
-        mock_response = Mock()
-        mock_response.json.return_value = {
-        }
-        requests.request.return_value = mock_response
-
-        dependabot = Dependabot(mock_repo, ANY, ANY)
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([])
 
         # then
         assert package_managers == set([])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.Dependabot.get_repo_contents')
-    def test_get_multiple_package_managers(self, get_repo_contents, requests):
+    def test_get_multiple_package_managers(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
         mock_dockerfile = {
             'name': 'Dockerfile'
         }
         mock_pipfile = {
             'name': 'Pipfile'
         }
-        mock_contents = [mock_dockerfile, mock_pipfile]
-        get_repo_contents.return_value = mock_contents
-        dependabot = Dependabot(mock_repo, ANY, ANY)
+
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers(
+            [mock_dockerfile, mock_pipfile]
+        )
 
         # then
         assert package_managers == set(['docker', 'pip'])
