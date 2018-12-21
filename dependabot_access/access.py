@@ -5,7 +5,7 @@ import os
 import requests
 
 from collections import namedtuple
-from . dependabot import Dependabot
+from .dependabot import Dependabot
 
 logger = logging.getLogger()
 

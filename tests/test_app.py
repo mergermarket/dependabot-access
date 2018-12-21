@@ -319,7 +319,8 @@ class TestApp(unittest.TestCase):
         # then
         request.assert_called_with(
             'GET',
-            f'https://api.github.com/repos/{self._org_name}/{repo_name}/contents'
+            f'https://api.github.com/repos/{self._org_name}/{repo_name}'
+            '/contents'
         )
 
     @patch('dependabot_access.dependabot.requests.Session.request')

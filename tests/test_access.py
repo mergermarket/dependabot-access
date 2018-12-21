@@ -18,7 +18,7 @@ class TestAccess(unittest.TestCase):
     @patch('dependabot_access.access.App.get_github_repo')
     @patch('dependabot_access.dependabot.requests.Session')
     def test_access(
-        self, session, get_github_repo, install_app_on_repo,
+        self, dependabot_session, get_github_repo, install_app_on_repo,
         get_repo_contents
     ):
         # given
@@ -43,7 +43,10 @@ class TestAccess(unittest.TestCase):
         mock_request = Mock()
         mock_request.return_value = mock_response
 
-        session.return_value.request = mock_request
+        dependabot_session.return_value.request = mock_request
+
+        mock_headers = Mock()
+        dependabot_session.return_value.headers = mock_headers
 
         args = [
             '--org', 'test-org',
@@ -54,6 +57,14 @@ class TestAccess(unittest.TestCase):
         configure_app(args, 'test-github-token')
 
         # then
+        # mock_headers.update.assert_called_with(
+        #     {
+        #         'Authorization': f"Personal abcdef",
+        #         'Cache-Control': 'no-cache',
+        #         'Content-Type': 'application/json'
+        #     }
+        # )
+
         data = {
             'repo-id': '1',
             'package-manager': 'docker',
