@@ -306,3 +306,34 @@ class TestApp(unittest.TestCase):
                 'Failed to add repo test-mock-repo to Dependabot'
                 'app installation'
             )
+
+    @patch('dependabot_access.access.requests.Session.request')
+    def test_get_repo_contents(self, request):
+        # given
+        repo_name = 'repo-name'
+        app = App(self._org_name, ANY, self._app_id, ANY, Mock(), Mock())
+
+        # when
+        app.get_repo_contents(repo_name)
+
+        # then
+        request.assert_called_with(
+            'GET',
+            f'https://api.github.com/repos/{self._org_name}/{repo_name}/contents'
+        )
+
+    @patch('dependabot_access.dependabot.requests.Session.request')
+    def test_get_repo_contents_no_content(self, request):
+        # given
+        repo_name = 'repo-name'
+        app = App(self._org_name, ANY, self._app_id, ANY, Mock(), Mock())
+
+        mock_response = Mock()
+        mock_response.status_code = 404
+        request.return_value = mock_response
+
+        # when
+        result = app.get_repo_contents(repo_name)
+
+        # then
+        assert result == []

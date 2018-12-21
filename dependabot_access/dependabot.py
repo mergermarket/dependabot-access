@@ -32,7 +32,7 @@ class Dependabot:
         self.dependabot_headers = {
             'Authorization': f"Personal {os.environ['GITHUB_TOKEN']}",
             'Cache-Control': 'no-cache',
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         }
 
         self.dependabot_request_session = requests.Session()
