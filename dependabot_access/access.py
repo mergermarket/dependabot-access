@@ -21,14 +21,14 @@ class App():
         self.account_id = account_id
         self.on_error = on_error
 
-        self.github_headers = {
+        self.headers = {
             'Authorization': f"token {self.github_token}",
             'Accept': "application/vnd.github.machine-man-preview+json",
             'Cache-Control': "no-cache"
         }
 
         self.github_request_session = requests.Session()
-        self.github_request_session.headers.update(self.github_headers)
+        self.github_request_session.headers.update(self.headers)
 
         self.dependabot = dependabot
 

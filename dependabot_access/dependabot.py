@@ -29,14 +29,14 @@ class Dependabot:
             "mix.lock": "hex"
         }
 
-        self.dependabot_headers = {
+        self.headers = {
             'Authorization': f"Personal {os.environ['GITHUB_TOKEN']}",
             'Cache-Control': 'no-cache',
             'Content-Type': 'application/json'
         }
 
         self.dependabot_request_session = requests.Session()
-        self.dependabot_request_session.headers.update(self.dependabot_headers)
+        self.dependabot_request_session.headers.update(self.headers)
 
     def has(self, filename, repo_files):
         file_list = [repo_file.get('name') for repo_file in repo_files]

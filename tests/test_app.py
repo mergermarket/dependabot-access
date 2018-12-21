@@ -338,3 +338,19 @@ class TestApp(unittest.TestCase):
 
         # then
         assert result == []
+
+    def test_headers(self):
+        # given
+        github_token = 'abcdef'
+
+        # when
+        app = App(
+            self._org_name, github_token, self._app_id, ANY, Mock(), Mock()
+        )
+
+        # then
+        assert app.headers == {
+            'Authorization': "token abcdef",
+            'Accept': "application/vnd.github.machine-man-preview+json",
+            'Cache-Control': "no-cache"
+        }

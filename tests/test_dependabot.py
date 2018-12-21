@@ -237,3 +237,15 @@ class TestDependabot(unittest.TestCase):
 
         # then
         assert package_managers == set(['docker', 'pip'])
+
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    def test_headers(self):
+        # given when
+        dependabot = Dependabot(ANY, ANY)
+
+        # then
+        assert dependabot.headers == {
+            'Authorization': "Personal abcdef",
+            'Cache-Control': 'no-cache',
+            'Content-Type': 'application/json'
+        }
