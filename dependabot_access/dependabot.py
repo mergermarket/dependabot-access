@@ -7,10 +7,8 @@ import requests
 logger = logging.getLogger()
 
 
-class DependabotRepo:
-    def __init__(self, github_repo, account_id, on_error):
-        self.repo_name = github_repo.name
-        self.repo_id = github_repo.id
+class Dependabot:
+    def __init__(self, account_id, on_error):
         self.account_id = account_id
         self.on_error = on_error
 
@@ -31,65 +29,50 @@ class DependabotRepo:
             "mix.lock": "hex"
         }
 
-        self.github_headers = {
-            'Authorization': f"token {os.environ['GITHUB_TOKEN']}",
-            'Accept': 'application/vnd.github.machine-man-preview+json',
-            'Cache-Control': 'no-cache',
-        }
-
-        self.dependabot_headers = {
+        self.headers = {
             'Authorization': f"Personal {os.environ['GITHUB_TOKEN']}",
             'Cache-Control': 'no-cache',
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         }
 
-        self.repo_files = self.get_repo_contents()
+        self.dependabot_request_session = requests.Session()
+        self.dependabot_request_session.headers.update(self.headers)
 
-    def get_repo_contents(self):
-        no_repo_contents_status_code = 404
-        response = requests.request(
-            'GET',
-            f'https://api.github.com/repos/mergermarket/'
-            f'{self.repo_name}/contents',
-            headers=self.github_headers)
-        if response.status_code == no_repo_contents_status_code:
-            logger.info(f'Repo {self.repo_name} has no content')
-            return []
-        return response.json()
-
-    def has(self, filename):
-        file_list = [repo_file.get('name') for repo_file in self.repo_files]
+    def has(self, filename, repo_files):
+        file_list = [repo_file.get('name') for repo_file in repo_files]
         return filename in file_list
 
-    def get_package_managers(self):
+    def get_package_managers(self, repo_files):
         package_managers = []
         for (
             package_manager_file, package_manager
         ) in self.package_managers_files.items():
-            if self.has(package_manager_file):
+            if self.has(package_manager_file, repo_files):
                 package_managers.append(package_manager)
         return set(package_managers)
 
-    def add_configs_to_dependabot(self):
-        for package_manager in self.get_package_managers():
+    def add_configs_to_dependabot(self, repo, repo_files):
+        for package_manager in self.get_package_managers(repo_files):
             data = {
-                'repo-id': self.repo_id,
+                'repo-id': repo.id,
                 'package-manager': package_manager,
                 'update-schedule': 'daily',
                 'directory': '/',
                 'account-id': self.account_id,
-                'account-type': 'org',
+                'account-type': 'org'
             }
-            logger.info(f'Dependabot: Updating config for {self.repo_name}')
-            response = requests.request(
+            logger.info(
+                f'Dependabot: Updating config for repo: {repo.name} '
+                f'with Package manager: {package_manager}'
+            )
+            response = self.dependabot_request_session.request(
                 'POST',
                 'https://api.dependabot.com/update_configs',
-                data=json.dumps(data),
-                headers=self.dependabot_headers
+                data=json.dumps(data)
             )
             if response.status_code == 201 and response.reason == 'Created':
                 logger.info(
-                    f"Config for repo {self.repo_name}. "
+                    f"Config for repo {repo.name}. "
                     f"Dependabot Package manager: {package_manager} added"
                 )
             elif (
@@ -97,13 +80,13 @@ class DependabotRepo:
                 "already exists" in response.text
             ):
                 logger.info(
-                    f"Config for repo {self.repo_name}. "
+                    f"Config for repo {repo.name}. "
                     f"Dependabot Package Manager: {package_manager} "
                     "already exists"
                 )
             else:
                 self.on_error(
-                    f"Failed to add repo {self.repo_name}. "
+                    f"Failed to add repo {repo.name}. "
                     f"Dependabot Package Manager: {package_manager} failed. "
                     f"(Status Code: {response.status_code}: {response.text})"
                 )

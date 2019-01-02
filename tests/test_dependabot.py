@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from dependabot_access.dependabot import DependabotRepo
+from dependabot_access.dependabot import Dependabot
 from unittest.mock import patch, Mock, ANY
 
 
@@ -11,30 +11,30 @@ class TestDependabot(unittest.TestCase):
         self._repo_name = 'repo-name'
 
     @patch('dependabot_access.dependabot.logger')
-    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.requests.Session.request')
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_package_managers')
+    @patch('dependabot_access.dependabot.Dependabot.get_package_managers')
     def test_add_configs_to_dependabot(
-            self, get_package_managers, requests, logger
+            self, get_package_managers, request, logger
     ):
         # given
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_repo.id = '1234'
-        dependabot_repo = DependabotRepo(mock_repo, '4444', Mock())
+        dependabot_repo = Dependabot('4444', Mock())
 
         get_package_managers.return_value = set(['pip'])
 
         mock_response = Mock()
         mock_response.status_code = 201
         mock_response.reason = 'Created'
-        requests.request.return_value = mock_response
+        request.return_value = mock_response
 
         # when
-        dependabot_repo.add_configs_to_dependabot()
+        dependabot_repo.add_configs_to_dependabot(mock_repo, Mock())
 
         # then
-        requests.request.assert_called_with(
+        request.assert_called_with(
             'POST',
             'https://api.dependabot.com/update_configs',
             data=json.dumps(
@@ -46,12 +46,7 @@ class TestDependabot(unittest.TestCase):
                     'account-id': '4444',
                     'account-type': 'org',
                 }
-            ),
-            headers={
-                'Authorization': "Personal abcdef",
-                'Cache-Control': 'no-cache',
-                'Content-Type': 'application/json',
-            }
+            )
         )
 
         logger.info.assert_called_with(
@@ -59,30 +54,30 @@ class TestDependabot(unittest.TestCase):
         )
 
     @patch('dependabot_access.dependabot.logger')
-    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.requests.Session.request')
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_package_managers')
+    @patch('dependabot_access.dependabot.Dependabot.get_package_managers')
     def test_add_configs_to_dependabot_status_code_400(
-            self, get_package_managers, requests, logger
+            self, get_package_managers, request, logger
     ):
         # given
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_repo.id = '1234'
-        dependabot_repo = DependabotRepo(mock_repo, '4444', Mock())
+        dependabot_repo = Dependabot('4444', Mock())
 
         get_package_managers.return_value = set(['pip'])
 
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.text = 'bla bla bla already exists'
-        requests.request.return_value = mock_response
+        request.return_value = mock_response
 
         # when
-        dependabot_repo.add_configs_to_dependabot()
+        dependabot_repo.add_configs_to_dependabot(mock_repo, Mock())
 
         # then
-        requests.request.assert_called_with(
+        request.assert_called_with(
             'POST',
             'https://api.dependabot.com/update_configs',
             data=json.dumps(
@@ -94,12 +89,7 @@ class TestDependabot(unittest.TestCase):
                     'account-id': '4444',
                     'account-type': 'org',
                 }
-            ),
-            headers={
-                'Authorization': "Personal abcdef",
-                'Cache-Control': 'no-cache',
-                'Content-Type': 'application/json',
-            }
+            )
         )
 
         logger.info.assert_called_with(
@@ -107,31 +97,31 @@ class TestDependabot(unittest.TestCase):
             "Dependabot Package Manager: pip already exists"
         )
 
-    @patch('dependabot_access.dependabot.requests')
+    @patch('dependabot_access.dependabot.requests.Session.request')
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_package_managers')
+    @patch('dependabot_access.dependabot.Dependabot.get_package_managers')
     def test_add_configs_to_dependabot_error(
-            self, get_package_managers, requests
+            self, get_package_managers, request
     ):
         # given
         mock_repo = Mock()
         mock_repo.name = self._repo_name
         mock_repo.id = '1234'
         mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, '4444', mock_on_error)
+        dependabot_repo = Dependabot('4444', mock_on_error)
 
         get_package_managers.return_value = set(['pip'])
 
         mock_response = Mock()
         mock_response.status_code = 500
         mock_response.text = 'There\'s been an error!'
-        requests.request.return_value = mock_response
+        request.return_value = mock_response
 
         # when
-        dependabot_repo.add_configs_to_dependabot()
+        dependabot_repo.add_configs_to_dependabot(mock_repo, Mock())
 
         # then
-        requests.request.assert_called_with(
+        request.assert_called_with(
             'POST',
             'https://api.dependabot.com/update_configs',
             data=json.dumps(
@@ -143,12 +133,7 @@ class TestDependabot(unittest.TestCase):
                     'account-id': '4444',
                     'account-type': 'org',
                 }
-            ),
-            headers={
-                'Authorization': "Personal abcdef",
-                'Cache-Control': 'no-cache',
-                'Content-Type': 'application/json',
-            }
+            )
         )
 
         mock_on_error.assert_called_once_with(
@@ -157,183 +142,110 @@ class TestDependabot(unittest.TestCase):
             "(Status Code: 500: There's been an error!)"
         )
 
-    @patch('dependabot_access.dependabot.requests')
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    def test_get_repo_contents(self, requests):
+    def test_has_false(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
-
-        # when
-        dependabot_repo.get_repo_contents()
-
-        # then
-        requests.request.assert_called_with(
-            'GET',
-            'https://api.github.com/repos/mergermarket/repo-name/contents',
-            headers={
-                'Authorization': "token abcdef",
-                'Accept': 'application/vnd.github.machine-man-preview+json',
-                'Cache-Control': 'no-cache',
-            }
-        )
-
-    @patch('dependabot_access.dependabot.requests')
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    def test_get_repo_contents_no_content(self, requests):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
-
-        mock_response = Mock()
-        mock_response.status_code = 404
-        requests.request.return_value = mock_response
-
-        # when
-        result = dependabot_repo.get_repo_contents()
-
-        # then
-        assert result == []
-
-    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_has_false(self, get_repo_contents):
-        # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
-
-        get_repo_contents.return_value = []
+        dependabot_repo = Dependabot(ANY, Mock())
 
         # when then
-        self.assertFalse(dependabot_repo.has(None))
+        self.assertFalse(dependabot_repo.has(None, []))
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_has_true(self, get_repo_contents):
+    def test_has_true(self):
         # given
         mock_content = {
             'name': 'Dockerfile'
         }
-        get_repo_contents.return_value = [mock_content]
 
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_on_error = Mock()
-        dependabot_repo = DependabotRepo(mock_repo, ANY, mock_on_error)
+        dependabot_repo = Dependabot(ANY, Mock())
 
         # when then
-        assert dependabot_repo.has('Dockerfile')
+        assert dependabot_repo.has('Dockerfile', [mock_content])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_get_package_managers(self, get_repo_contents, requests):
+    def test_get_package_managers(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_dockerfile = {
+        mock_content = {
             'name': 'Dockerfile'
         }
-        mock_contents = [mock_dockerfile]
-        get_repo_contents.return_value = mock_contents
-        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([mock_content])
 
         # then
         assert package_managers == set(['docker'])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_get_gradle_package_manager(self, get_repo_contents, requests):
+    def test_get_gradle_package_manager(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_gradlefile = {
+        mock_content = {
             'name': 'build.gradle'
         }
-        mock_contents = [mock_gradlefile]
-        get_repo_contents.return_value = mock_contents
 
-        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([mock_content])
 
         # then
         assert package_managers == set(['gradle'])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_get_maven_package_manager(self, get_repo_contents, requests):
+    def test_get_maven_package_manager(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_gradlefile = {
+        mock_content = {
             'name': 'pom.xml'
         }
-        mock_contents = [mock_gradlefile]
-        get_repo_contents.return_value = mock_contents
 
-        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([mock_content])
 
         # then
         assert package_managers == set(['maven'])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_get_no_files_in_repo(self, get_repo_contents, requests):
+    def test_get_no_files_in_repo(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
-        mock_contents = []
-        get_repo_contents.return_value = mock_contents
-
-        mock_response = Mock()
-        mock_response.json.return_value = {
-        }
-        requests.request.return_value = mock_response
-
-        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers([])
 
         # then
         assert package_managers == set([])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.requests')
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
-    def test_get_multiple_package_managers(self, get_repo_contents, requests):
+    def test_get_multiple_package_managers(self):
         # given
-        mock_repo = Mock()
-        mock_repo.name = self._repo_name
         mock_dockerfile = {
             'name': 'Dockerfile'
         }
         mock_pipfile = {
             'name': 'Pipfile'
         }
-        mock_contents = [mock_dockerfile, mock_pipfile]
-        get_repo_contents.return_value = mock_contents
-        dependabot = DependabotRepo(mock_repo, ANY, ANY)
+
+        dependabot = Dependabot(ANY, ANY)
 
         # when
-        package_managers = dependabot.get_package_managers()
+        package_managers = dependabot.get_package_managers(
+            [mock_dockerfile, mock_pipfile]
+        )
 
         # then
         assert package_managers == set(['docker', 'pip'])
+
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    def test_headers(self):
+        # given when
+        dependabot = Dependabot(ANY, ANY)
+
+        # then
+        assert dependabot.headers == {
+            'Authorization': "Personal abcdef",
+            'Cache-Control': 'no-cache',
+            'Content-Type': 'application/json'
+        }

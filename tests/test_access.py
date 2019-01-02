@@ -13,18 +13,22 @@ class TestAccess(unittest.TestCase):
         self.dependabot_id = '123456'
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
-    @patch('dependabot_access.dependabot.DependabotRepo.get_repo_contents')
+    @patch('dependabot_access.access.App.get_repo_contents')
     @patch('dependabot_access.access.App.install_app_on_repo')
-    @patch('dependabot_access.access.Github')
-    def test_access(self, github, install_app_on_repo, get_repo_contents):
+    @patch('dependabot_access.access.App.get_github_repo')
+    @patch('dependabot_access.dependabot.requests.Session')
+    def test_access(
+        self, dependabot_session, get_github_repo, install_app_on_repo,
+        get_repo_contents
+    ):
         # given
         mock_repo = Mock()
         mock_repo.id = '1'
         mock_repo.name = 'Repo-A'
         mock_repo.archived = False
-        mock_repo.permissions.admin = True
+        mock_repo.admin = True
 
-        github.return_value.get_repo.side_effect = [mock_repo, Mock(), Mock()]
+        get_github_repo.side_effect = [mock_repo, Mock(), Mock()]
 
         mock_content = {
             'name': 'Dockerfile'
@@ -35,19 +39,32 @@ class TestAccess(unittest.TestCase):
         mock_response = Mock()
         mock_response.status_code = 201
         mock_response.reason = 'Created'
-        with patch(
-            'dependabot_access.dependabot.requests.request',
-            return_value=mock_response
-        ) as dependabot_request:
-            args = [
-                '--org', 'test-org',
-                '--access', f'{os.getcwd()}/tests/fixtures/access.json',
-                '--dependabot-id', self.dependabot_id,
-                '--account-id', self.account_id
-            ]
-            configure_app(args, 'test-github-token')
+
+        mock_request = Mock()
+        mock_request.return_value = mock_response
+
+        dependabot_session.return_value.request = mock_request
+
+        mock_headers = Mock()
+        dependabot_session.return_value.headers = mock_headers
+
+        args = [
+            '--org', 'test-org',
+            '--access', f'{os.getcwd()}/tests/fixtures/access.json',
+            '--dependabot-id', self.dependabot_id,
+            '--account-id', self.account_id
+        ]
+        configure_app(args, 'test-github-token')
 
         # then
+        # mock_headers.update.assert_called_with(
+        #     {
+        #         'Authorization': f"Personal abcdef",
+        #         'Cache-Control': 'no-cache',
+        #         'Content-Type': 'application/json'
+        #     }
+        # )
+
         data = {
             'repo-id': '1',
             'package-manager': 'docker',
@@ -56,15 +73,10 @@ class TestAccess(unittest.TestCase):
             'account-id': self.account_id,
             'account-type': 'org',
         }
-        dependabot_request.assert_called_once_with(
+        mock_request.assert_called_once_with(
             'POST',
             'https://api.dependabot.com/update_configs',
-            data=json.dumps(data),
-            headers={
-                'Authorization': f"Personal abcdef",
-                'Cache-Control': 'no-cache',
-                'Content-Type': 'application/json'
-            }
+            data=json.dumps(data)
         )
 
     @patch('dependabot_access.access.App')
@@ -103,7 +115,7 @@ class TestAccess(unittest.TestCase):
 
             # then
             patch_app.assert_called_once_with(
-                'test-org', 'test-github-token', '123456', '7890', ANY
+                'test-org', 'test-github-token', '123456', '7890', ANY, ANY
             )
             mocked_open.assert_called_once_with('test-file.json', 'r')
             patch_app.return_value.configure.assert_called_once_with(

@@ -34,11 +34,11 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = repo_name
         mock_repo.archived = True
-        mock_repo.permissions.admin = True
+        mock_repo.admin = True
         get_github_repo.return_value = mock_repo
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -68,11 +68,11 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = repo_name
         mock_repo.archived = False
-        mock_repo.permissions.admin = False
+        mock_repo.admin = False
         get_github_repo.return_value = mock_repo
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -80,7 +80,7 @@ class TestApp(unittest.TestCase):
 
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.App.get_github_repo')
-    @patch('dependabot_access.access.DependabotRepo')
+    @patch('dependabot_access.access.Dependabot')
     def test_app_configure(
         self, dependabot_repo, get_github_repo, install_app_on_repo
     ):
@@ -103,11 +103,11 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = repo_name
         mock_repo.archived = False
-        mock_repo.permissions.admin = True
+        mock_repo.admin = True
         get_github_repo.return_value = mock_repo
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -117,7 +117,7 @@ class TestApp(unittest.TestCase):
 
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.App.get_github_repo')
-    @patch('dependabot_access.access.DependabotRepo')
+    @patch('dependabot_access.access.Dependabot')
     def test_app_configure_no_dependabot(
         self, dependabot_repo, get_github_repo, install_app_on_repo
     ):
@@ -140,11 +140,11 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = repo_name
         mock_repo.archived = False
-        mock_repo.permissions.admin = True
+        mock_repo.admin = True
         get_github_repo.return_value = mock_repo
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -168,7 +168,7 @@ class TestApp(unittest.TestCase):
         ]
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -191,7 +191,7 @@ class TestApp(unittest.TestCase):
         ]
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -214,7 +214,7 @@ class TestApp(unittest.TestCase):
         ]
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
@@ -222,9 +222,8 @@ class TestApp(unittest.TestCase):
 
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.App.get_github_repo')
-    @patch('dependabot_access.access.DependabotRepo')
     def test_enforce_app_access(
-        self, dependabot_repo, get_github_repo, install_app_on_repo
+        self, get_github_repo, install_app_on_repo
     ):
         #  given
         repo_name = 'mock-repo-name'
@@ -232,11 +231,11 @@ class TestApp(unittest.TestCase):
         mock_repo = Mock()
         mock_repo.name = repo_name
         mock_repo.archived = False
-        mock_repo.permissions.admin = True
+        mock_repo.admin = True
         get_github_repo.return_value = mock_repo
 
         # when
-        app = App(ANY, ANY, self._app_id, ANY, ANY)
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.enforce_app_access(repo_name)
 
         # then
@@ -244,60 +243,62 @@ class TestApp(unittest.TestCase):
             self._app_id, mock_repo
         )
 
-    @patch('dependabot_access.access.Github')
-    def test_get_github_repo(self, github):
+    @patch('dependabot_access.access.requests.Session')
+    def test_get_github_repo(self, session):
         # given
-        repo_name = 'mock-repo-name'
-
-        mock_repo = Mock()
-        mock_repo.name = repo_name
-        github.return_value.get_repo.return_value = mock_repo
+        session.return_value.request.return_value.json.return_value = {
+            'id': 1,
+            'name': 'mock-repo-name',
+            'archived': False,
+            'permissions': {
+                'admin': True
+            }
+        }
 
         # when
-        app = App(self._org_name, ANY, self._app_id, ANY, ANY)
-        repo = app.get_github_repo(repo_name)
+        app = App(self._org_name, ANY, self._app_id, ANY, ANY, Mock())
+        repo = app.get_github_repo('mock-repo-name')
 
         # then
-        assert repo == mock_repo
+        assert repo.id == 1
+        assert repo.name == 'mock-repo-name'
+        assert not repo.archived
+        assert repo.admin
 
-    @patch('dependabot_access.access.requests')
-    def test_install_app_on_repo(self, requests):
+    def test_install_app_on_repo(self):
         github_token = 'github-token'
         mock_repo = Mock()
         mock_repo.id = '12345'
+
         url = (
             f'https://api.github.com/user/installations/{self._app_id}/'
             f'repositories/{mock_repo.id}'
         )
-        headers = {
-            'Authorization': f"token {github_token}",
-            'Accept': "application/vnd.github.machine-man-preview+json",
-            'Cache-Control': "no-cache",
-        }
         mock_response = Mock()
         mock_response.status_code = 204
-        app = App(ANY, github_token, self._app_id, ANY, ANY)
-        with patch(
-            'dependabot_access.access.requests.request',
-            return_value=mock_response
-        ):
-            app.install_app_on_repo(self._app_id, mock_repo)
-            requests.request.assert_called_once_with(
-                "PUT", url, headers=headers
-            )
 
-    @patch('dependabot_access.access.requests')
-    def test_install_app_on_repo_error(self, requests):
+        app = App(ANY, github_token, self._app_id, ANY, Mock(), Mock())
+        with patch(
+            'dependabot_access.access.requests.Session.request',
+            return_value=mock_response
+        ) as request:
+            app.install_app_on_repo(self._app_id, mock_repo)
+            request.assert_called_once_with("PUT", url)
+
+    def test_install_app_on_repo_error(self):
         github_token = 'github-token'
         mock_repo = Mock()
         mock_repo.id = '12345'
         mock_repo.name = 'test-mock-repo'
+
         mock_response = Mock()
         mock_response.status_code = 500
+
         mock_error = Mock()
-        app = App(ANY, github_token, self._app_id, ANY, mock_error)
+
+        app = App(ANY, github_token, self._app_id, ANY, mock_error, Mock())
         with patch(
-            'dependabot_access.access.requests.request',
+            'dependabot_access.access.requests.Session.request',
             return_value=mock_response
         ):
             app.install_app_on_repo(self._app_id, mock_repo)
@@ -305,3 +306,51 @@ class TestApp(unittest.TestCase):
                 'Failed to add repo test-mock-repo to Dependabot'
                 'app installation'
             )
+
+    @patch('dependabot_access.access.requests.Session.request')
+    def test_get_repo_contents(self, request):
+        # given
+        repo_name = 'repo-name'
+        app = App(self._org_name, ANY, self._app_id, ANY, Mock(), Mock())
+
+        # when
+        app.get_repo_contents(repo_name)
+
+        # then
+        request.assert_called_with(
+            'GET',
+            f'https://api.github.com/repos/{self._org_name}/{repo_name}'
+            '/contents'
+        )
+
+    @patch('dependabot_access.dependabot.requests.Session.request')
+    def test_get_repo_contents_no_content(self, request):
+        # given
+        repo_name = 'repo-name'
+        app = App(self._org_name, ANY, self._app_id, ANY, Mock(), Mock())
+
+        mock_response = Mock()
+        mock_response.status_code = 404
+        request.return_value = mock_response
+
+        # when
+        result = app.get_repo_contents(repo_name)
+
+        # then
+        assert result == []
+
+    def test_headers(self):
+        # given
+        github_token = 'abcdef'
+
+        # when
+        app = App(
+            self._org_name, github_token, self._app_id, ANY, Mock(), Mock()
+        )
+
+        # then
+        assert app.headers == {
+            'Authorization': "token abcdef",
+            'Accept': "application/vnd.github.machine-man-preview+json",
+            'Cache-Control': "no-cache"
+        }
