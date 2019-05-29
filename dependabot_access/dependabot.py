@@ -39,7 +39,12 @@ class Dependabot:
         self.dependabot_request_session.headers.update(self.headers)
 
     def has(self, filename, repo_files):
-        file_list = [repo_file.get('name') for repo_file in repo_files]
+        file_list = []
+        for repo_file in repo_files:
+            if isinstance(repo_file, str):
+                file_list.append(repo_file)
+            else:
+                file_list.append(repo_file.get('name'))
         return filename in file_list
 
     def get_package_managers(self, repo_files):

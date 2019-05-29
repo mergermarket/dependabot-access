@@ -163,6 +163,16 @@ class TestDependabot(unittest.TestCase):
         assert dependabot_repo.has('Dockerfile', [mock_content])
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    def test_has_true_string(self):
+        # given
+        mock_content = 'Dockerfile'
+
+        dependabot_repo = Dependabot(ANY, Mock())
+
+        # when then
+        assert dependabot_repo.has('Dockerfile', [mock_content])
+
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
     def test_get_package_managers(self):
         # given
         mock_content = {
