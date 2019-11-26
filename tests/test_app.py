@@ -115,14 +115,12 @@ class TestApp(unittest.TestCase):
             self._app_id, mock_repo
         )
 
-    @patch('dependabot_access.access.App.install_app_on_repo')
-    @patch('dependabot_access.access.App.get_github_repo')
-    @patch('dependabot_access.access.Dependabot')
+    @patch('dependabot_access.access.App.enforce_app_access')
+    @patch('dependabot_access.access.App.cease_app_access')
     def test_app_configure_no_dependabot(
-        self, dependabot_repo, get_github_repo, install_app_on_repo
+        self, cease_app_access, enforce_app_access
     ):
         #  given
-        repo_name = 'mock-repo-name'
         config = [
             {
                 'teams': {
@@ -132,27 +130,23 @@ class TestApp(unittest.TestCase):
                     'dependabot': False
                 },
                 'repos': [
-                    repo_name
+                    'mock_repo_name'
                 ]
             }
         ]
-
-        mock_repo = Mock()
-        mock_repo.name = repo_name
-        mock_repo.archived = False
-        mock_repo.admin = True
-        get_github_repo.return_value = mock_repo
 
         # when
         app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
         app.configure(config)
 
         # then
-        app.install_app_on_repo.assert_not_called()
+        app.cease_app_access.assert_called_with('mock_repo_name')
+        app.enforce_app_access.assert_not_called()
 
     @patch('dependabot_access.access.App.enforce_app_access')
+    @patch('dependabot_access.access.App.cease_app_access')
     def test_app_configure_no_dependabot_object(
-        self, enforce_app_access
+        self, cease_app_access, enforce_app_access
     ):
         #  given
         config = [
@@ -172,11 +166,13 @@ class TestApp(unittest.TestCase):
         app.configure(config)
 
         # then
+        app.cease_app_access.assert_called_with('mock_repo_name')
         app.enforce_app_access.assert_not_called()
 
     @patch('dependabot_access.access.App.enforce_app_access')
+    @patch('dependabot_access.access.App.cease_app_access')
     def test_app_configure_no_app(
-        self, enforce_app_access
+        self, cease_app_access, enforce_app_access
     ):
         #  given
         config = [
@@ -195,6 +191,7 @@ class TestApp(unittest.TestCase):
         app.configure(config)
 
         # then
+        app.cease_app_access.assert_called_with('mock_repo_name')
         app.enforce_app_access.assert_not_called()
 
     @patch('dependabot_access.access.App.enforce_app_access')
@@ -354,3 +351,89 @@ class TestApp(unittest.TestCase):
             'Accept': "application/vnd.github.machine-man-preview+json",
             'Cache-Control': "no-cache"
         }
+
+    @patch('dependabot_access.access.App.remove_app_on_repo')
+    @patch('dependabot_access.access.App.get_github_repo')
+    def test_cease_app_access(
+        self, get_github_repo, remove_app_on_repo
+    ):
+        #  given
+        repo_name = 'mock-repo-name'
+
+        mock_repo = Mock()
+        mock_repo.name = repo_name
+        mock_repo.archived = False
+        mock_repo.admin = True
+        get_github_repo.return_value = mock_repo
+
+        # when
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
+        app.cease_app_access(repo_name)
+
+        # then
+        app.remove_app_on_repo.assert_called_once_with(
+            self._app_id, mock_repo
+        )
+
+    @patch('dependabot_access.access.App.remove_app_on_repo')
+    @patch('dependabot_access.access.App.get_github_repo')
+    def test_cease_app_access_repo_not_configurable(
+        self, get_github_repo, remove_app_on_repo
+    ):
+        #  given
+        repo_name = 'mock-repo-name'
+
+        mock_repo = Mock()
+        mock_repo.name = repo_name
+        mock_repo.archived = True
+        mock_repo.admin = False
+        get_github_repo.return_value = mock_repo
+
+        # when
+        app = App(ANY, ANY, self._app_id, ANY, ANY, Mock())
+        app.cease_app_access(repo_name)
+
+        # then
+        app.remove_app_on_repo.assert_not_called()
+
+    def test_remove_app_on_repo(self):
+        github_token = 'github-token'
+        mock_repo = Mock()
+        mock_repo.id = '12345'
+
+        url = (
+            f'https://api.github.com/user/installations/{self._app_id}/'
+            f'repositories/{mock_repo.id}'
+        )
+        mock_response = Mock()
+        mock_response.status_code = 204
+
+        app = App(ANY, github_token, self._app_id, ANY, Mock(), Mock())
+        with patch(
+            'dependabot_access.access.requests.Session.request',
+            return_value=mock_response
+        ) as request:
+            app.remove_app_on_repo(self._app_id, mock_repo)
+            request.assert_called_once_with("DELETE", url)
+
+    def test_remove_app_on_repo_error(self):
+        github_token = 'github-token'
+        mock_repo = Mock()
+        mock_repo.id = '12345'
+        mock_repo.name = 'test-mock-repo'
+
+        mock_response = Mock()
+        mock_response.status_code = 500
+
+        mock_error = Mock()
+
+        app = App(ANY, github_token, self._app_id, ANY, mock_error, Mock())
+        with patch(
+            'dependabot_access.access.requests.Session.request',
+            return_value=mock_response
+        ):
+            app.remove_app_on_repo(self._app_id, mock_repo)
+            mock_error.assert_called_once_with(
+                'Failed to remove Dependabot app installation from '
+                'repo test-mock-repo'
+            )

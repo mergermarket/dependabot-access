@@ -13,13 +13,14 @@ class TestAccess(unittest.TestCase):
         self.dependabot_id = '123456'
 
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    @patch('dependabot_access.access.App.cease_app_access')
     @patch('dependabot_access.access.App.get_repo_contents')
     @patch('dependabot_access.access.App.install_app_on_repo')
     @patch('dependabot_access.access.App.get_github_repo')
     @patch('dependabot_access.dependabot.requests.Session')
     def test_access(
         self, dependabot_session, get_github_repo, install_app_on_repo,
-        get_repo_contents
+        get_repo_contents, cease_app_access
     ):
         # given
         mock_repo = Mock()

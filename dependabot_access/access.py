@@ -34,9 +34,17 @@ class App():
 
     def configure(self, config_list):
         for config in config_list:
-            if config.get('apps', {}).get('dependabot', False):
-                for repo_name in config.get('repos', []):
-                    self.enforce_app_access(repo_name)
+            for repo_name in config.get('repos', []):
+                self.configure_app(
+                    repo_name,
+                    config.get('apps', {}).get('dependabot', False)
+                )
+
+    def configure_app(self, repo_name, dependabot):
+        if dependabot:
+            self.enforce_app_access(repo_name)
+        else:
+            self.cease_app_access(repo_name)
 
     def get_repo_contents(self, repo_name):
         no_repo_contents_status_code = 404
@@ -52,7 +60,7 @@ class App():
 
     def enforce_app_access(self, repo_name):
         repo = self.get_github_repo(repo_name)
-        if repo.archived or not repo.admin:
+        if self.is_repo_not_configurable(repo):
             return
         self.install_app_on_repo(self.app_id, repo)
         repo_files = self.get_repo_contents(repo_name)
@@ -87,6 +95,28 @@ class App():
                 f'Failed to add repo {repo.name} to Dependabot'
                 'app installation'
             )
+
+    def cease_app_access(self, repo_name):
+        repo = self.get_github_repo(repo_name)
+        if self.is_repo_not_configurable(repo):
+            return
+        self.remove_app_on_repo(self.app_id, repo)
+
+    def remove_app_on_repo(self, app_id, repo):
+        url = (
+            f'https://api.github.com/user/installations/{app_id}/'
+            f'repositories/{repo.id}'
+        )
+        logger.info(f'Removing app on {repo.name} in Github')
+        response = self.github_request_session.request("DELETE", url)
+        if response.status_code != 204:
+            self.on_error(
+                'Failed to remove Dependabot app installation from '
+                f'repo {repo.name}'
+            )
+
+    def is_repo_not_configurable(self, repo):
+        return repo.archived or not repo.admin
 
 
 def configure_app(args, handle_error):
