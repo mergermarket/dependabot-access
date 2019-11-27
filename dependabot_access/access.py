@@ -74,6 +74,7 @@ class App():
             f'https://api.github.com/repos/{self.org_name}/'
             f'{repo_name}'
         )
+        response.raise_for_status()
         repo_content = response.json()
         repo = namedtuple('Repository', 'id, name, archived, admin')(
             repo_content.get('id'),
