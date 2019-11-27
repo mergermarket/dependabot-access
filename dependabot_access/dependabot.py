@@ -75,23 +75,36 @@ class Dependabot:
                 'https://api.dependabot.com/update_configs',
                 data=json.dumps(data)
             )
-            if response.status_code == 201 and response.reason == 'Created':
-                logger.info(
-                    f"Config for repo {repo.name}. "
-                    f"Dependabot Package manager: {package_manager} added"
-                )
-            elif (
-                response.status_code == 400 and
-                "already exists" in response.text
-            ):
-                logger.info(
-                    f"Config for repo {repo.name}. "
-                    f"Dependabot Package Manager: {package_manager} "
-                    "already exists"
-                )
-            else:
-                self.on_error(
-                    f"Failed to add repo {repo.name}. "
-                    f"Dependabot Package Manager: {package_manager} failed. "
-                    f"(Status Code: {response.status_code}: {response.text})"
-                )
+
+            self.check_for_errors(repo, package_manager, response)
+
+    def check_for_errors(self, repo, package_manager, response):
+        if response.status_code == 201 and response.reason == 'Created':
+            logger.info(
+                f"Config for repo {repo.name}. "
+                f"Dependabot Package manager: {package_manager} added"
+            )
+        elif (
+            response.status_code == 400 and
+            "already exists" in response.text
+        ):
+            logger.info(
+                f"Config for repo {repo.name}. "
+                f"Dependabot Package Manager: {package_manager} "
+                "already exists"
+            )
+        elif (
+            response.status_code == 400 and
+            "repository is using a config file" in response.text
+        ):
+            logger.info(
+                f"Config for repo {repo.name}. "
+                f"Dependabot Package Manager: {package_manager}. "
+                f"{response.json().get('errors')[0].get('detail')}"
+            )
+        else:
+            self.on_error(
+                f"Failed to add repo {repo.name}. "
+                f"Dependabot Package Manager: {package_manager} failed. "
+                f"(Status Code: {response.status_code}: {response.text})"
+            )

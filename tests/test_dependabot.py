@@ -97,6 +97,65 @@ class TestDependabot(unittest.TestCase):
             "Dependabot Package Manager: pip already exists"
         )
 
+    @patch('dependabot_access.dependabot.logger')
+    @patch('dependabot_access.dependabot.requests.Session.request')
+    @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
+    @patch('dependabot_access.dependabot.Dependabot.get_package_managers')
+    def test_add_configs_to_dependabot_status_code_400_with_config_file(
+            self, get_package_managers, request, logger
+    ):
+        # given
+        mock_repo = Mock()
+        mock_repo.name = self._repo_name
+        mock_repo.id = '1234'
+        dependabot_repo = Dependabot('4444', Mock())
+
+        get_package_managers.return_value = set(['pip'])
+
+        mock_response_json = {
+            "errors": [
+                {
+                    "status": 400,
+                    "title": "Bad Request",
+                    "detail": "The repository is using a config file so "
+                              "can't be managed through the API, please "
+                              "update the config file instead."
+                }
+            ]
+        }
+
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = str(mock_response_json)
+        mock_response.json.return_value = mock_response_json
+        request.return_value = mock_response
+
+        # when
+        dependabot_repo.add_configs_to_dependabot(mock_repo, Mock())
+
+        # then
+        request.assert_called_with(
+            'POST',
+            'https://api.dependabot.com/update_configs',
+            data=json.dumps(
+                {
+                    'repo-id': '1234',
+                    'package-manager': 'pip',
+                    'update-schedule': 'daily',
+                    'directory': '/',
+                    'account-id': '4444',
+                    'account-type': 'org',
+                }
+            )
+        )
+
+        logger.info.assert_called_with(
+            "Config for repo repo-name. "
+            "Dependabot Package Manager: pip. "
+            "The repository is using a config file so can't be managed "
+            "through the API, please update the config file instead."
+        )
+
     @patch('dependabot_access.dependabot.requests.Session.request')
     @patch.dict('os.environ', {'GITHUB_TOKEN': 'abcdef'})
     @patch('dependabot_access.dependabot.Dependabot.get_package_managers')
