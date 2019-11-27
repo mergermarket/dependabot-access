@@ -100,7 +100,7 @@ class Dependabot:
             logger.info(
                 f"Config for repo {repo.name}. "
                 f"Dependabot Package Manager: {package_manager}. "
-                f"{response.text}"
+                f"{response.json().get('errors')[0].get('detail')}"
             )
         else:
             self.on_error(

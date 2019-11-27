@@ -112,11 +112,22 @@ class TestDependabot(unittest.TestCase):
 
         get_package_managers.return_value = set(['pip'])
 
+        mock_response_json = {
+            "errors": [
+                {
+                    "status": 400,
+                    "title": "Bad Request",
+                    "detail": "The repository is using a config file so "
+                              "can't be managed through the API, please "
+                              "update the config file instead."
+                }
+            ]
+        }
+
         mock_response = Mock()
         mock_response.status_code = 400
-        mock_response.text = \
-            "The repository is using a config file so can't be managed " \
-            "through the API, please update the config file instead."
+        mock_response.text = str(mock_response_json)
+        mock_response.json.return_value = mock_response_json
         request.return_value = mock_response
 
         # when
